@@ -49,13 +49,27 @@ export const useChat = () => {
     setAnswer(prev => {
       const newAnswers = [...prev];
       if (newAnswers.length > 0) {
+        const prevMessage = newAnswers[newAnswers.length - 1];
+
+        let displayContent: string;
+        if (step === 'done') {
+          displayContent = content;
+        } else if (toolCalls && toolCalls.length > 0 && toolCalls[0].startsWith('[분석 계획]')) {
+          displayContent = toolCalls.join('\n');
+        } else if (toolCalls && toolCalls.length > 0) {
+          displayContent = `${toolCalls.join(', ')} 이해하고 있습니다.`;
+        } else {
+          displayContent = `${name.replace(/.*?: /, '')} 처리 중입니다.`;
+        }
+
+        // metadata 누적: 이전 metadata를 유지하되 새로운 metadata가 있으면 덮어쓴다
+        const updatedMetadata = metadata ?? prevMessage.metadata ?? null;
+
         newAnswers[newAnswers.length - 1] = {
-          ...newAnswers[newAnswers.length - 1],
-          content: step === 'done' ? content
-            : (toolCalls && toolCalls.length > 0 ? `${toolCalls.join(', ')} 이해하고 있습니다.` :
-              `${name.replace(/.*?: /, '')} 처리 중입니다.`),
+          ...prevMessage,
+          content: displayContent,
           isLoading: step !== 'done',
-          metadata: metadata ?? null
+          metadata: updatedMetadata
         };
       }
       return newAnswers;
